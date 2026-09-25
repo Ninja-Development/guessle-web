@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Guessle — Trivia with friends</title>
+  <meta name="description" content="Kahoot-style trivia for friends on the same Wi-Fi. One phone hosts, everyone plays. Download for Android.">
+  <meta name="theme-color" content="#0d0820">
+  <meta property="og:title" content="Guessle — Trivia with friends">
+  <meta property="og:description" content="One phone hosts, everyone plays. No accounts, no servers.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231a1036'/%3E%3Cpath d='M9 6l5 8H4z' fill='%23e21b3c'/%3E%3Cpath d='M23 4l5 6-5 6-5-6z' fill='%231368ce'/%3E%3Ccircle cx='9' cy='23' r='4.5' fill='%23d89e00'/%3E%3Crect x='18.5' y='18.5' width='9' height='9' rx='1.5' fill='%2326890c'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d0820;
+      --surface: rgba(255, 255, 255, 0.05);
+      --border: rgba(255, 255, 255, 0.10);
+      --text: #f4f1ff;
+      --muted: #a79fc4;
+      --accent: #8b5cf6;
+      --red: #e21b3c;
+      --blue: #1368ce;
+      --yellow: #d89e00;
+      --green: #26890c;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      min-height: 100vh;
+      min-height: 100dvh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      line-height: 1.55;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Ambient background glow + subtle grid */
+    .bg {
+      position: fixed; inset: 0; z-index: -1; pointer-events: none;
+      background:
+        radial-gradient(60vmax 60vmax at 85% -10%, rgba(139, 92, 246, 0.35), transparent 60%),
+        radial-gradient(50vmax 50vmax at -10% 110%, rgba(19, 104, 206, 0.28), transparent 60%),
+        radial-gradient(30vmax 30vmax at 50% 50%, rgba(226, 27, 60, 0.10), transparent 70%);
+    }
+    .bg::after {
+      content: ""; position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+      background-size: 56px 56px;
+      mask-image: radial-gradient(ellipse at center, black 20%, transparent 75%);
+      -webkit-mask-image: radial-gradient(ellipse at center, black 20%, transparent 75%);
+    }
+
+    .wrap {
+      max-width: 1120px; margin: 0 auto;
+      padding: max(20px, env(safe-area-inset-top)) 16px max(28px, env(safe-area-inset-bottom));
+      min-height: 100vh; min-height: 100dvh;
+      display: flex; flex-direction: column;
+    }
+
+    header { display: flex; align-items: center; gap: 12px; padding: 8px 0; }
+    .mark {
+      width: 40px; height: 40px; border-radius: 11px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 3px; padding: 7px;
+      background: linear-gradient(145deg, #231546, #140c2c);
+      border: 1px solid var(--border);
+      box-shadow: 0 6px 24px rgba(139, 92, 246, 0.25);
+    }
+    .mark i { display: block; border-radius: 3px; }
+    .mark i:nth-child(1) { background: var(--red); }
+    .mark i:nth-child(2) { background: var(--blue); }
+    .mark i:nth-child(3) { background: var(--yellow); }
+    .mark i:nth-child(4) { background: var(--green); }
+    .brand { font-family: Sora, sans-serif; font-weight: 700; font-size: 1.25rem; letter-spacing: -0.02em; }
+
+    main {
+      flex: 1;
+      display: grid; grid-template-columns: 1.1fr 0.9fr;
+      align-items: center; gap: 56px;
+      padding: 40px 0;
+    }
+    main > * { min-width: 0; }
+
+    .eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 12px; border-radius: 999px;
+      background: var(--surface); border: 1px solid var(--border);
+      font-size: 0.8rem; font-weight: 500; color: var(--muted);
+    }
+    .eyebrow .dot { width: 7px; height: 7px; border-radius: 50%; background: #34d399; box-shadow: 0 0 10px #34d399; }
+
+    h1 {
+      font-family: Sora, sans-serif; font-weight: 800;
+      font-size: clamp(2.4rem, 6vw, 4.2rem);
+      line-height: 1.04; letter-spacing: -0.035em;
+      margin: 20px 0 18px;
+    }
+    h1 .grad {
+      background: linear-gradient(95deg, #c4b5fd 0%, #8b5cf6 40%, #60a5fa 100%);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .lede { font-size: 1.1rem; color: var(--muted); max-width: 34rem; }
+
+    .features { display: flex; flex-wrap: wrap; gap: 10px; margin: 26px 0 34px; list-style: none; }
+    .features li {
+      font-size: 0.88rem; font-weight: 500;
+      padding: 8px 14px; border-radius: 10px;
+      background: var(--surface); border: 1px solid var(--border);
+    }
+
+    .cta { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; }
+    .download {
+      position: relative; display: inline-flex; align-items: center; gap: 14px;
+      padding: 16px 28px 16px 22px; border-radius: 16px;
+      text-decoration: none; color: #fff;
+      background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+      box-shadow: 0 10px 40px rgba(139, 92, 246, 0.45), inset 0 1px 0 rgba(255,255,255,0.25);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .download:hover { transform: translateY(-2px); box-shadow: 0 16px 50px rgba(139, 92, 246, 0.6), inset 0 1px 0 rgba(255,255,255,0.25); }
+    .download:active { transform: translateY(0); }
+    .download:focus-visible { outline: 3px solid #c4b5fd; outline-offset: 3px; }
+    .download svg { width: 28px; height: 28px; flex: none; }
+    .download .label { display: flex; flex-direction: column; line-height: 1.2; }
+    .download small { font-size: 0.75rem; opacity: 0.8; font-weight: 500; }
+    .download strong { font-family: Sora, sans-serif; font-size: 1.1rem; font-weight: 700; }
+    .meta { font-size: 0.85rem; color: var(--muted); }
+
+    .notice {
+      display: none; margin-top: 22px; align-items: center; gap: 18px;
+      padding: 16px; border-radius: 16px; max-width: 30rem;
+      background: var(--surface); border: 1px solid var(--border);
+    }
+    .notice.show { display: flex; }
+    .notice #qr { flex: none; width: 104px; height: 104px; background: #fff; border-radius: 10px; padding: 6px; }
+    .notice #qr img, .notice #qr svg { width: 100%; height: 100%; display: block; }
+    .notice p { font-size: 0.9rem; color: var(--muted); }
+    .notice strong { color: var(--text); }
+
+    /* Phone mockup */
+    .stage { position: relative; display: flex; justify-content: center; }
+    .phone {
+      position: relative; width: min(300px, 78vw); aspect-ratio: 9 / 19;
+      border-radius: 44px; padding: 12px;
+      background: linear-gradient(160deg, #2a2340, #0f0a1f);
+      border: 1px solid rgba(255,255,255,0.14);
+      box-shadow: 0 40px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1);
+      transform: rotate(-4deg);
+      animation: float 7s ease-in-out infinite;
+    }
+    @keyframes float { 0%,100% { transform: rotate(-4deg) translateY(0); } 50% { transform: rotate(-4deg) translateY(-12px); } }
+    .screen {
+      height: 100%; border-radius: 34px; overflow: hidden;
+      background: #1e1240;
+      display: flex; flex-direction: column; padding: 38px 14px 16px;
+      position: relative;
+    }
+    .screen::before {
+      content: ""; position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+      width: 80px; height: 22px; border-radius: 12px; background: #000;
+    }
+    .s-top { display: flex; justify-content: space-between; font-size: 0.66rem; color: #cfc6ee; font-weight: 600; }
+    .s-bar { height: 7px; border-radius: 4px; background: rgba(255,255,255,0.12); margin: 10px 0 0; overflow: hidden; }
+    .s-bar i { display: block; height: 100%; width: 100%; background: #b69cff; border-radius: 4px; transform-origin: left; animation: timer 8s linear infinite; }
+    @keyframes timer { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+    .s-q { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center;
+      font-family: Sora, sans-serif; font-weight: 700; font-size: 1.02rem; line-height: 1.3; padding: 0 6px; }
+    .s-count { text-align: center; font-size: 0.64rem; color: #cfc6ee; margin-bottom: 10px; }
+    .s-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; height: 46%; }
+    .s-grid div {
+      border-radius: 11px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+      font-size: 0.74rem; font-weight: 600; color: #fff; text-align: center; padding: 6px;
+    }
+    .s-grid div:nth-child(1) { background: var(--red); }
+    .s-grid div:nth-child(2) { background: var(--blue); }
+    .s-grid div:nth-child(3) { background: var(--yellow); outline: 3px solid #fff; outline-offset: -3px; }
+    .s-grid div:nth-child(4) { background: var(--green); }
+    .s-grid svg { width: 16px; height: 16px; }
+
+    .chip {
+      position: absolute; padding: 10px 14px; border-radius: 14px;
+      background: rgba(26, 16, 54, 0.8); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border); box-shadow: 0 16px 40px rgba(0,0,0,0.4);
+      font-size: 0.82rem; font-weight: 600; white-space: nowrap;
+    }
+    .chip.a { top: 14%; left: -2%; }
+    .chip.b { bottom: 16%; right: -2%; }
+    .chip .pts { color: #34d399; }
+
+    section.steps { padding: 8px 0 32px; }
+    section.steps h2 { font-family: Sora, sans-serif; font-size: 1.1rem; font-weight: 700; margin-bottom: 14px; letter-spacing: -0.01em; }
+    .steps ol { list-style: none; display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; counter-reset: s; }
+    .steps li {
+      counter-increment: s; padding: 18px; border-radius: 16px;
+      background: var(--surface); border: 1px solid var(--border);
+      font-size: 0.92rem; color: var(--muted);
+    }
+    .steps li::before {
+      content: counter(s); display: grid; place-items: center;
+      width: 28px; height: 28px; border-radius: 8px; margin-bottom: 10px;
+      background: rgba(139, 92, 246, 0.2); color: #c4b5fd;
+      font-family: Sora, sans-serif; font-weight: 700; font-size: 0.85rem;
+    }
+    .steps li strong { color: var(--text); font-weight: 600; }
+
+    footer { font-size: 0.8rem; color: var(--muted); text-align: center; padding-top: 8px; opacity: 0.8; }
+
+    @media (max-width: 860px) {
+      main { grid-template-columns: 1fr; gap: 40px; padding: 24px 0 32px; text-align: center; }
+      .lede { margin: 0 auto; }
+      .features, .cta { justify-content: center; }
+      .notice { margin-left: auto; margin-right: auto; text-align: left; }
+      .stage { order: -1; }
+      .phone { width: min(230px, 62vw); }
+      .chip { display: none; }
+      .steps ol { grid-template-columns: 1fr; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .phone, .s-bar i { animation: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg" aria-hidden="true"></div>
+  <div class="wrap">
+    <header>
+      <div class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      <span class="brand">Guessle</span>
+    </header>
+
+    <main>
+      <div>
+        <span class="eyebrow"><span class="dot"></span>Free for Android</span>
+        <h1>Trivia night,<br><span class="grad">right from your phones.</span></h1>
+        <p class="lede">One phone hosts the room and everyone else joins over the same Wi-Fi. No accounts, no sign-ups and no internet server. Pick how many questions to play, and the fastest thinkers climb the leaderboard.</p>
+
+        <ul class="features">
+          <li>👥 10+ players</li>
+          <li>🌍 History, space, animals &amp; more</li>
+          <li>📶 Plays offline</li>
+          <li>🏆 Live leaderboard</li>
+        </ul>
+
+        <div class="cta">
+          <a class="download" id="download" href="guessle.apk" download="Guessle.apk">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.6 9.48l1.84-3.18c.16-.31.04-.69-.26-.85a.637.637 0 0 0-.83.22l-1.88 3.24a11.43 11.43 0 0 0-8.94 0L5.65 5.67a.643.643 0 0 0-.87-.2c-.28.18-.37.54-.22.83L6.4 9.48A10.78 10.78 0 0 0 1 18h22a10.78 10.78 0 0 0-5.4-8.52zM7 15.25a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5zm10 0a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5z"/></svg>
+            <span class="label"><small>Download for</small><strong>Android</strong></span>
+          </a>
+          <span class="meta">Version 1.0.0 · <span id="size">APK</span> · Android 5.0+</span>
+        </div>
+
+        <div class="notice" id="desktop-notice">
+          <div id="qr" aria-hidden="true"></div>
+          <p><strong>On a computer?</strong> Scan this with your Android phone to download Guessle directly to it.</p>
+        </div>
+      </div>
+
+      <div class="stage" aria-hidden="true">
+        <div class="phone">
+          <div class="screen">
+            <div class="s-top"><span>Question 4/10</span><span>Space</span></div>
+            <div class="s-bar"><i></i></div>
+            <div class="s-q">Which planet is the hottest in our Solar System?</div>
+            <div class="s-count">Answer locked in · 7/9 answered</div>
+            <div class="s-grid">
+              <div><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M12 4l9 16H3z"/></svg>Mercury</div>
+              <div><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M12 3l8 9-8 9-8-9z"/></svg>Mars</div>
+              <div><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><circle cx="12" cy="12" r="8"/></svg>Venus</div>
+              <div><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><rect x="4" y="4" width="16" height="16" rx="1"/></svg>Jupiter</div>
+            </div>
+          </div>
+        </div>
+        <div class="chip a">🥇 Lerato <span class="pts">7 pts</span></div>
+        <div class="chip b">✅ Correct! <span class="pts">+1</span></div>
+      </div>
+    </main>
+
+    <section class="steps">
+      <h2>Installing on Android</h2>
+      <ol>
+        <li><strong>Download the APK</strong> using the button above, then open it from your notifications or Downloads.</li>
+        <li><strong>Allow the install.</strong> If Android asks, let your browser install unknown apps. It only asks the first time.</li>
+        <li><strong>Get everyone on one Wi-Fi</strong>, or the host's hotspot. One person hosts, and everyone else taps Join.</li>
+      </ol>
+    </section>
+
+    <footer>Guessle · made for game nights</footer>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+  <script>
+    (function () {
+      var isAndroid = /android/i.test(navigator.userAgent);
+      if (!isAndroid) {
+        var notice = document.getElementById('desktop-notice');
+        notice.classList.add('show');
+        try {
+          var qr = qrcode(0, 'M');
+          qr.addData(location.href.split('#')[0]);
+          qr.make();
+          document.getElementById('qr').innerHTML = qr.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
+        } catch (e) {
+          document.getElementById('qr').style.display = 'none';
+        }
+      }
+
+      // Show the real APK size.
+      fetch('guessle.apk', { method: 'HEAD' }).then(function (r) {
+        var bytes = +r.headers.get('content-length');
+        if (bytes > 0) document.getElementById('size').textContent = (bytes / 1048576).toFixed(1) + ' MB';
+      }).catch(function () {});
+    })();
+  </script>
+</body>
+</html>
